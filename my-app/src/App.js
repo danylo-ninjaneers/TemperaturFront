@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactApexChart from 'react-apexcharts'; // Make sure this package is installed
+import ReactApexChart from 'react-apexcharts';
 
 function ApexChart() {
   const [state] = React.useState({
@@ -49,6 +49,22 @@ function ApexChart() {
       }
     }
   });
+
+  React.useEffect(() => {
+    // Replace the URL with your API endpoint
+    fetch('https://api.example.com/temperatures/week')
+      .then(res => res.json())
+      .then(data => {
+        // Assume data = [2.3, 3.1, 4.0, 10.1, 4.0, 3.6, 3.2]
+        setSeries([{
+          name: 'durchschnit Temperatur',
+          data: data
+        }]);
+      })
+      .catch(err => {
+        console.error('Failed to fetch temperature data:', err);
+      });
+  }, []);
 
   return (
     <div id="chart">
