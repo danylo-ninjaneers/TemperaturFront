@@ -4,7 +4,7 @@ import ReactApexChart from 'react-apexcharts'; // Make sure this package is inst
 function ApexChart() {
   const [state] = React.useState({
     series: [{
-      name: 'Inflation',
+      name: 'Durchschnittstemperatur',
       data: [2.3, 3.1, 4.0, 10.1, 4.0, 3.6, 3.2]
     }],
     options: {
@@ -12,12 +12,12 @@ function ApexChart() {
       plotOptions: { bar: { borderRadius: 10, dataLabels: { position: 'top' } } },
       dataLabels: {
         enabled: true,
-        formatter: val => val + "%",
+        formatter: val => val + "°C",
         offsetY: -20,
         style: { fontSize: '12px', colors: ["#304758"] }
       },
       xaxis: {
-        categories: ["Sunday", "Monday", "Tuestay", "Wednesday", "Thirsday", "Friday", "Saturday",],
+        categories: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag",],
         position: 'top',
         axisBorder: { show: false },
         axisTicks: { show: false },
@@ -38,10 +38,10 @@ function ApexChart() {
       yaxis: {
         axisBorder: { show: false },
         axisTicks: { show: false },
-        labels: { show: false, formatter: val => val + "%" }
+        labels: { show: false, formatter: val => val + "°C" }
       },
       title: {
-        text: 'Monthly Inflation in Argentina, 2002',
+        text: 'Temperatur',
         floating: true,
         offsetY: 330,
         align: 'center',
@@ -60,7 +60,7 @@ function ApexChart() {
 function App() {
   return (
     <div>
-      <h1>Hello, React!</h1>
+      <h1>Aktuelle Datum</h1>
       <ApexChart />
     </div>
   );
