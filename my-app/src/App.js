@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
 const chartOptions = {
@@ -11,7 +11,7 @@ const chartOptions = {
     style: { fontSize: '12px', colors: ["#304758"] }
   },
   xaxis: {
-    categories: Array.from({ length: 24 }, (_, i) => `${i}:00`), // 0:00 to 23:00
+    categories: Array.from({ length: 24 }, (_, i) => `${i}:00`),
     position: 'top',
     axisBorder: { show: false },
     axisTicks: { show: false },
@@ -43,39 +43,47 @@ const chartOptions = {
   }
 };
 
-function ApexChart() {
-  const [currentTemp, setCurrentTemp] = useState(null);
+function App() {
+  const [currentTemp, setCurrentTemp] = useState('');
   const [last24hTemps, setLast24hTemps] = useState(Array(24).fill(0));
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Example API response: { current: 21.5, last24h: [20.1, 20.3, ..., 21.5] }
-    fetch('https://localhost:8080/temperature/last24h')
-      .then(res => res.json())
-      .then(data => {
-        setCurrentTemp(data.current);
+    const fetchTemperature = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('http://localhost:8080/getTemperature');
+        const data = await response.json();
+        setCurrentTemp(data.temperature);
         setLast24hTemps(data.last24h);
-      })
-      .catch(() => {});
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setCurrentTemp('Fehler beim Laden');
+        setLast24hTemps(Array(24).fill(0));
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTemperature();
   }, []);
 
   return (
-    <div>
-      <h2>Aktuelle Temperatur: {currentTemp !== null ? `${currentTemp}°C` : 'Lädt...'}</h2>
-      <ReactApexChart
-        options={chartOptions}
-        series={[{ name: 'Temperatur', data: last24hTemps }]}
-        type="bar"
-        height={350}
-      />
-    </div>
-  );
-}
-
-function App() {
-  return (
-    <div>
-      <h1>Temperatur Übersicht</h1>
-      <ApexChart />
+    <div className="App">
+      <header className="App-header">
+        <h2>
+          {loading
+            ? 'Lädt...'
+            : currentTemp !== null
+            ? `Aktuelle Temperatur: ${currentTemp}°C`
+            : 'Noch keine Daten'}
+        </h2>
+        <ReactApexChart
+          options={chartOptions}
+          series={[{ name: 'Temperatur', data: last24hTemps }]}
+          type="bar"
+          height={350}
+        />
+      </header>
     </div>
   );
 }
