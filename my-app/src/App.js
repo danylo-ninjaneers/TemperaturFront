@@ -11,7 +11,7 @@ const chartOptions = {
     style: { fontSize: '12px', colors: ["#304758"] }
   },
   xaxis: {
-    categories: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
+    categories: Array.from({ length: 24 }, (_, i) => `${i}:00`), // 0:00 to 23:00
     position: 'top',
     axisBorder: { show: false },
     axisTicks: { show: false },
@@ -35,7 +35,7 @@ const chartOptions = {
     labels: { show: false, formatter: val => val + "°C" }
   },
   title: {
-    text: 'Temperatur',
+    text: 'Temperatur letzte 24 Stunden',
     floating: true,
     offsetY: 330,
     align: 'center',
@@ -44,21 +44,26 @@ const chartOptions = {
 };
 
 function ApexChart() {
-  const [temperatures, setTemperatures] = useState([2.3, 3.1, 4.0, 10.1, 4.0, 3.6, 3.2]);
+  const [currentTemp, setCurrentTemp] = useState(null);
+  const [last24hTemps, setLast24hTemps] = useState(Array(24).fill(0));
 
   useEffect(() => {
-    // Replace with your real API endpoint
-    fetch('https://api.example.com/temperatures/week')
+    // Example API response: { current: 21.5, last24h: [20.1, 20.3, ..., 21.5] }
+    fetch('https://localhost:8080/temperature/last24h')
       .then(res => res.json())
-      .then(data => setTemperatures(data))
-      .catch(() => {}); // Ignore errors for simplicity
+      .then(data => {
+        setCurrentTemp(data.current);
+        setLast24hTemps(data.last24h);
+      })
+      .catch(() => {});
   }, []);
 
   return (
-    <div id="chart">
+    <div>
+      <h2>Aktuelle Temperatur: {currentTemp !== null ? `${currentTemp}°C` : 'Lädt...'}</h2>
       <ReactApexChart
         options={chartOptions}
-        series={[{ name: 'Durchschnittstemperatur', data: temperatures }]}
+        series={[{ name: 'Temperatur', data: last24hTemps }]}
         type="bar"
         height={350}
       />
@@ -69,7 +74,7 @@ function ApexChart() {
 function App() {
   return (
     <div>
-      <h1>Aktuelle Datum</h1>
+      <h1>Temperatur Übersicht</h1>
       <ApexChart />
     </div>
   );
