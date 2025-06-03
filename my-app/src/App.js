@@ -1,21 +1,46 @@
 import React, { useState } from "react";
+import ReactApexChart from "react-apexcharts";
+
+// Beispielhafte Chart-Optionen
+const chartOptions = {
+  chart: { type: "bar", height: 350 },
+  xaxis: { categories: [] },
+  title: { text: "Tages-Temperaturen" }
+};
 
 function WeatherFetcher() {
   const [date, setDate] = useState("");
   const [weatherList, setWeatherList] = useState([]);
   const [notFound, setNotFound] = useState(false);
 
+  // Hilfsfunktion für Chart-Daten
+  const getDailyTemps = () => {
+    return weatherList.map(entry => ({
+      date: entry.date,
+      temp: entry.tempMax // oder tempMin, je nach gewünschtem Wert
+    }));
+  };
+
   const fetchWeather = async () => {
-    const response = await fetch(`http://localhost:8080/${date}`);
-    if (response.ok) {
-      const data = await response.json();
-      setWeatherList(data);
-      setNotFound(data.length === 0);
-    } else {
+    try {
+      const response = await fetch(`http://localhost:8080/${date}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Falls das Backend ein Objekt statt Array liefert, passe hier an:
+        const arr = Array.isArray(data) ? data : [data];
+        setWeatherList(arr);
+        setNotFound(arr.length === 0);
+      } else {
+        setWeatherList([]);
+        setNotFound(true);
+      }
+    } catch (error) {
       setWeatherList([]);
       setNotFound(true);
     }
   };
+
+  const dailyTemps = getDailyTemps();
 
   return (
     <div>
@@ -40,9 +65,18 @@ function WeatherFetcher() {
               <hr />
             </div>
           ))}
+          <ReactApexChart
+            options={{
+              ...chartOptions,
+              xaxis: { categories: dailyTemps.map(entry => entry.date) }
+            }}
+            series={[
+              { name: "Temperatur", data: dailyTemps.map(entry => entry.temp) }
+            ]}
+            type="bar"
+            height={350}
+          />
         </div>
-        
-
       )}
     </div>
   );
