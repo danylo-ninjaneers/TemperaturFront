@@ -1,88 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
-const chartOptions = {
-  chart: { height: 350, type: 'bar' },
-  plotOptions: { bar: { borderRadius: 10, dataLabels: { position: 'top' } } },
-  dataLabels: {
-    enabled: true,
-    formatter: val => val + "°C",
-    offsetY: -20,
-    style: { fontSize: '12px', colors: ["#304758"] }
-  },
-  xaxis: {
-    categories: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-    position: 'top',
-    axisBorder: { show: false },
-    axisTicks: { show: false },
-    crosshairs: {
-      fill: {
-        type: 'gradient',
-        gradient: {
-          colorFrom: '#D8E3F0',
-          colorTo: '#BED1E6',
-          stops: [0, 100],
-          opacityFrom: 0.4,
-          opacityTo: 0.5,
-        }
-      }
-    },
-    tooltip: { enabled: true }
-  },
-  yaxis: {
-    axisBorder: { show: false },
-    axisTicks: { show: false },
-    labels: { show: false, formatter: val => val + "°C" }
-  },
-  title: {
-    text: 'Temperatur letzte 24 Stunden',
-    floating: true,
-    offsetY: 330,
-    align: 'center',
-    style: { color: '#444' }
-  }
-};
-
 function App() {
-  const [currentTemp, setCurrentTemp] = useState('');
-  const [last24hTemps, setLast24hTemps] = useState(Array(24).fill(0));
-  const [loading, setLoading] = useState(false);
+  var chartOptions = {
+    chart: { height: 350, type: "bar" },
+    xaxis: { categories: [] },
+    title: { text: "Temperatur der letzten Tage", align: "center", style: { color: "#444" } }
+  };
 
-  useEffect(() => {
-    const fetchTemperature = async () => {
+  var [currentTemp, setCurrentTemp] = useState("");
+  var [dailyTemps, setDailyTemps] = useState([]);
+  var [loading, setLoading] = useState(false);
+  var [searchDate, setSearchDate] = useState("");
+  var [forecastTemps, setForecastTemps] = useState([]);
+  var [closestTemp, setClosestTemp] = useState(null);
+
+  useEffect(function () {
+    async function fetchTemperature() {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:8080/getTemperature');
-        const data = await response.json();
+        var response = await fetch("http://localhost:8080/getTemperature");
+        var data = await response.json();
         setCurrentTemp(data.temperature);
-        setLast24hTemps(data.last24h);
+        setDailyTemps(data.lastDays);
       } catch (error) {
-        console.error('Error fetching data:', error);
-        setCurrentTemp('Fehler beim Laden');
-        setLast24hTemps(Array(24).fill(0));
-      } finally {
-        setLoading(false);
+        console.error("Error fetching data:", error);
+        setCurrentTemp("Fehler beim Laden");
+        setDailyTemps([]);
       }
-    };
+      setLoading(false);
+    }
+
     fetchTemperature();
   }, []);
+
+  function findClosestTemperature(targetDate) {
+    var closestEntry = null;
+    var minDiff = Infinity;
+
+    for (var i = 0; i < dailyTemps.length; i++) {
+      var entry = dailyTemps[i];
+      var dateDiff = Math.abs(new Date(entry.date) - new Date(targetDate));
+      if (dateDiff < minDiff) {
+        minDiff = dateDiff;
+        closestEntry = entry;
+      }
+    }
+
+    if (closestEntry) {
+      setClosestTemp(closestEntry);
+      setCurrentTemp(closestEntry.temp);
+    }
+  }
+
+  function handleTemperatureSearch() {
+    findClosestTemperature(searchDate);
+    fetchForecast(searchDate);
+  }
+
+  async function fetchForecast(date) {
+    if (!date) return;
+    setLoading(true);
+    try {
+      var response = await fetch("http://localhost:8080/forecast?startDate=" + date);
+      var data = await response.json();
+      setForecastTemps(data);
+    } catch (error) {
+      console.error("Error fetching forecast:", error);
+      setForecastTemps([]);
+    }
+    setLoading(false);
+  }
 
   return (
     <div className="App">
       <header className="App-header">
-        <h2>
-          {loading
-            ? 'Lädt...'
-            : currentTemp !== null
-            ? `Aktuelle Temperatur: ${currentTemp}°C`
-            : 'Noch keine Daten'}
-        </h2>
-        <ReactApexChart
-          options={chartOptions}
-          series={[{ name: 'Temperatur', data: last24hTemps }]}
-          type="bar"
-          height={350}
-        />
+        <h2>{loading ? "Lädt..." : currentTemp ? "Temperatur: " + currentTemp + "°C" : "Noch keine Daten"}</h2>
+
+        <input type="date" value={searchDate} onChange={function (e) { setSearchDate(e.target.value); }} />
+        <button onClick={handleTemperatureSearch}>Suche Temperatur und Vorhersage</button>
+
+        {closestTemp && (
+          <p>
+            {searchDate === closestTemp.date
+              ? "Temperatur am " + closestTemp.date + ": " + closestTemp.temp + "°C"
+              : "Keine exakte Übereinstimmung. Nächste Temperatur: " + closestTemp.temp + "°C am " + closestTemp.date}
+          </p>
+        )}
+
+        <ReactApexChart options={{ ...chartOptions, xaxis: { categories: dailyTemps.map(function (entry) { return entry.date; }) } }} 
+                        series={[{ name: "Temperatur", data: dailyTemps.map(function (entry) { return entry.temp; }) }]} 
+                        type="bar" height={350} />
       </header>
     </div>
   );
