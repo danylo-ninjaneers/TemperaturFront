@@ -13,7 +13,8 @@ function toDouble(value) {
 }
 
 function WeatherFetcher() {
-  const [date, setDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [weatherList, setWeatherList] = useState([]);
   const [notFound, setNotFound] = useState(false);
 
@@ -24,7 +25,7 @@ function WeatherFetcher() {
       const tempMin = toDouble(entry.tempMin);
       const wind = toDouble(entry.wind);
       return {
-        date: entry.date,
+        date: entry.date || entry.endDate,
         tempMax,
         tempMin,
         tempMid: (tempMax + tempMin) / 2,
@@ -35,7 +36,7 @@ function WeatherFetcher() {
 
   const fetchWeather = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/${date}`);
+      const response = await fetch(`http://localhost:8080/${startDate}/${endDate}`);
       if (response.ok) {
         const data = await response.json();
         // Falls das Backend ein Objekt statt Array liefert, passe hier an:
@@ -56,14 +57,21 @@ function WeatherFetcher() {
 
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
-      <input
-        type="date"
-        value={date}
-        onChange={e => setDate(e.target.value)}
+      <div style={{ marginBottom: "16px" }}></div>
+    <input
+      type="date"
+      value={startDate}
+      onChange={e => setStartDate(e.target.value)}
+      style={{ marginRight: "8px" }}
+    />
+    <input
+      type="date"
+       value={endDate}
+      onChange={e => setEndDate(e.target.value)}
       />
-    <div style={{ display: "flex", justifyContent: "center", margin: "16px 0" }}>
-      <button onClick={fetchWeather}>Get Weather</button>
-    </div>
+      <div style={{ display: "flex", justifyContent: "center", margin: "16px 0" }}>
+        <button onClick={fetchWeather}>Get Weather</button>
+      </div>
       {notFound && <p>No weather data found for this date.</p>}
       {weatherList.length > 0 && (
         <div>
@@ -106,9 +114,11 @@ function WeatherFetcher() {
             height={350}
           />
         </div>
-      )}
-    </div>
+        
+        )}
+      </div>
   );
 }
 
 export default WeatherFetcher;
+
