@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactApexChart from "react-apexcharts";
 
-// Beispielhafte Chart-Optionen
+// Chart options
 const chartOptions = {
   chart: { type: "line", height: 350 },
   xaxis: { categories: [] },
@@ -13,12 +13,12 @@ function toDouble(value) {
 }
 
 function WeatherFetcher() {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [weatherList, setWeatherList] = useState([]);
   const [notFound, setNotFound] = useState(false);
+  const [lastInfo, setLastInfo] = useState(null);
+  const intervalRef = useRef();
 
-  // Hilfsfunktion für Chart-Daten
+  // Helper for chart data
   const getDailyTemps = () => {
     return weatherList.map(entry => {
       const tempMax = toDouble(entry.tempMax);
@@ -34,71 +34,52 @@ function WeatherFetcher() {
     });
   };
 
-  const fetchWeather = async () => {
+  // Fetch next weather entry
+  const fetchNextWeather = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/${startDate}/${endDate}`);
+      const response = await fetch("http://localhost:8080/weather");
       if (response.ok) {
         const data = await response.json();
-        // Falls das Backend ein Objekt statt Array liefert, passe hier an:
-        const arr = Array.isArray(data) ? data : [data];
-        setWeatherList(arr);
-        setNotFound(arr.length === 0);
+        setWeatherList(prev => [...prev, data]);
+        setNotFound(false);
       } else {
-        setWeatherList([]);
         setNotFound(true);
       }
     } catch (error) {
-      setWeatherList([]);
       setNotFound(true);
     }
   };
+
+  // On mount: fetch first entry and start interval
+  useEffect(() => {
+    fetchNextWeather(); // Initial fetch
+    intervalRef.current = setInterval(fetchNextWeather, 10000); // Every 10 seconds
+    return () => clearInterval(intervalRef.current);
+  }, []);
 
   const dailyTemps = getDailyTemps();
 
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
-      <div style={{ marginBottom: "16px" }}></div>
-    <input
-      type="date"
-      value={startDate}
-      onChange={e => setStartDate(e.target.value)}
-      style={{ marginRight: "8px" }}
-    />
-    <input
-      type="date"
-       value={endDate}
-      onChange={e => setEndDate(e.target.value)}
-      />
-      <div style={{ display: "flex", justifyContent: "center", margin: "16px 0" }}>
-        <button onClick={fetchWeather}>Get Weather</button>
-      </div>
-      {notFound && <p>No weather data found for this date.</p>}
+      <button
+        style={{ marginBottom: "16px" }}
+        onClick={() => setLastInfo(weatherList[weatherList.length - 1])}
+        disabled={weatherList.length === 0}
+      >
+        Show Last Info
+      </button>
+      {lastInfo && (
+        <div style={{ margin: "16px 0", border: "1px solid #ccc", padding: "8px" }}>
+          <strong>Letzter Eintrag:</strong><br />
+          Datum: {lastInfo.date}<br />
+          Min Temp: {lastInfo.tempMin}<br />
+          Max Temp: {lastInfo.tempMax}<br />
+          Wind: {lastInfo.wind}
+        </div>
+      )}
+      {notFound && <p>No weather data found.</p>}
       {weatherList.length > 0 && (
         <div>
-    <table style={{ borderCollapse: "collapse", width: "100%" }}>
-      <thead>
-        <tr>
-          <th style={{ border: "1px solid #ccc", padding: "4px" }}>Date</th>
-          <th style={{ border: "1px solid #ccc", padding: "4px" }}>Min Temp</th>
-          <th style={{ border: "1px solid #ccc", padding: "4px" }}>Max Temp</th>
-          <th style={{ border: "1px solid #ccc", padding: "4px" }}>Precipitation</th>
-          <th style={{ border: "1px solid #ccc", padding: "4px" }}>Wind</th>
-          <th style={{ border: "1px solid #ccc", padding: "4px" }}>Type</th>
-        </tr>
-      </thead>
-      <tbody>
-        {weatherList.map((weather, idx) => (
-          <tr key={idx}>
-            <td style={{ border: "1px solid #ccc", padding: "4px" }}>{weather.date}</td>
-            <td style={{ border: "1px solid #ccc", padding: "4px" }}>{weather.tempMin}</td>
-            <td style={{ border: "1px solid #ccc", padding: "4px" }}>{weather.tempMax}</td>
-            <td style={{ border: "1px solid #ccc", padding: "4px" }}>{weather.percipitation}</td>
-            <td style={{ border: "1px solid #ccc", padding: "4px" }}>{weather.wind}</td>
-            <td style={{ border: "1px solid #ccc", padding: "4px" }}>{weather.weatherType}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
           <ReactApexChart
             options={{
               ...chartOptions,
@@ -106,19 +87,17 @@ function WeatherFetcher() {
             }}
             series={[
               { name: "TemperaturMax", data: dailyTemps.map(entry => entry.tempMax) },
-              { name: "TemperaturMIn", data: dailyTemps.map(entry => entry.tempMin) },
+              { name: "TemperaturMin", data: dailyTemps.map(entry => entry.tempMin) },
               { name: "TemperaturMittel", data: dailyTemps.map(entry => entry.tempMid) },
-              { name: "WindGeschwindigkeit", data: dailyTemps.map(entry => entry.wind),color: "purple" }
+              { name: "WindGeschwindigkeit", data: dailyTemps.map(entry => entry.wind), color: "purple" }
             ]}
             type="line"
             height={350}
           />
         </div>
-        
-        )}
-      </div>
+      )}
+    </div>
   );
 }
 
 export default WeatherFetcher;
-
