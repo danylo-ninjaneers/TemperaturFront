@@ -9,7 +9,7 @@ const chartOptions = {
 };
 
 function toDouble(value) {
-  return parseFloat(value, 10) || 0;
+  return Math.round(parseFloat(value, 10) || 0 * 10) / 10; // Convert to float and round to one decimal place
 }
 
 function WeatherFetcher() {
@@ -28,7 +28,7 @@ function WeatherFetcher() {
         date: entry.date || entry.endDate,
         tempMax,
         tempMin,
-        tempMid: (tempMax + tempMin) / 2,
+        tempMid: Math.round(((tempMax + tempMin) / 2) * 10) / 10, // Rounded to one decimal place
         wind
       };
     });
