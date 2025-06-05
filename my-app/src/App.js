@@ -9,7 +9,7 @@ const chartOptions = {
 };
 
 function toDouble(value) {
-  return Math.round(parseFloat(value, 10) || 0 * 10) / 10; // Convert to float and round to one decimal place
+  return Math.round((parseFloat(value, 10) || 0) * 10) / 10; // Convert to float and round to one decimal place
 }
 
 function WeatherFetcher() {
@@ -40,7 +40,7 @@ function WeatherFetcher() {
       const response = await fetch("http://localhost:8080/weather");
       if (response.ok) {
         const data = await response.json();
-        setWeatherList(prev => [...prev, data]);
+        setWeatherList(data);
         setNotFound(false);
       } else {
         setNotFound(true);
