@@ -16,7 +16,8 @@ function WeatherFetcher() {
   const [weatherList, setWeatherList] = useState([]);
   const [notFound, setNotFound] = useState(false);
   const [lastInfo, setLastInfo] = useState(null);
-  const [feeling, setFeeling] = useState("");
+  const [feelingDate, setFeelingDate] = useState("");
+  const [feelingValue, setFeelingValue] = useState("");
   const [feelingStatus, setFeelingStatus] = useState("");
   const intervalRef = useRef();
 
@@ -55,17 +56,16 @@ function WeatherFetcher() {
     }
   };
 
-  // Send weather feeling (number) to backend
   const sendFeeling = async () => {
-    if (feeling === "") {
-      setFeelingStatus("Please enter a value.");
+    if (!feelingDate || feelingValue === "") {
+      setFeelingStatus("Please enter both date and feeling.");
       return;
     }
     try {
       const response = await fetch("http://localhost:8080/weatherFeeling", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: feeling // Send as raw number
+        body: JSON.stringify({ date: feelingDate, feeling: parseFloat(feelingValue) })
       });
       if (response.ok) {
         setFeelingStatus("Feeling sent successfully!");
@@ -88,11 +88,17 @@ function WeatherFetcher() {
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
       <div style={{ marginBottom: "24px" }}>
+         <input
+          type="date"
+          value={feelingDate}
+          onChange={e => setFeelingDate(e.target.value)}
+          style={{ marginRight: "8px" }}
+        />
         <input
           type="number"
-          value={feeling}
-          onChange={e => setFeeling(e.target.value)}
-          placeholder="Your temperature feeling"
+          value={feelingValue}
+          onChange={e => setFeelingValue(e.target.value)}
+          placeholder="Feeling (°C)"
           style={{ marginRight: "8px" }}
         />
         <button onClick={sendFeeling}>Send Feeling</button>
